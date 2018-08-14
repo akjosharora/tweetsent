@@ -6,16 +6,12 @@ import  re
 import  nltk
 
 from    nltk.corpus     import wordnet  as wn
+from    itertools       import chain
 try :
     nltk.download('stopwords')
 except :
     pass
 
-ANTO_DICT   = {}
-for i in wn.all_synsets():
-    for j in i.lemmas():
-        if j.antonyms():
-            ANTO_DICT[j.name()] = j.antonyms()[0].name()
 STOP_WORDS     = nltk.corpus.stopwords.words('english')
 STOP_WORDS.remove('not')
 
@@ -75,10 +71,32 @@ def replace_antonyms(text):
     not_words       = re.compile(expression).findall(text)
 
     for x in not_words :
-        if ANTO_DICT.get(x[1]) :
-            text = text.replace(x[0], ANTO_DICT.get(x[1]))
-
+        try :
+            antonyms    = set()
+            for syn in wn.synsets(x[1]):
+                for lemma in syn.lemmas():
+                    if lemma.antonyms():
+                        antonyms.update([x.name() for x in lemma.antonyms()])
+            text = text.replace(x[0], list(sorted(antonyms))[0])
+        except Exception as e:
+            print(e)
     return text
+
+def replace_synonyms(tokens):
+    '''
+        Replace a word it's synonym, this will be very helpful for numerical representation.
+        All possible synonyms for a given word are replaced exactly with the same synonym.
+        Args    :
+            tokens   : The tokens to process.
+        Returns :   A list with tokens replaced with their synonyms.
+    '''
+    tokens  = tokens.copy()
+
+    for i in len(tokens) :
+        synonyms    = wn.synsets(token)
+        tokens[i]   = list(sorted(set(chain.from_iterable([word.lemma_names() for word in synonyms]))))[0]
+
+    return tokens
 
 def remove_stop_words(tokens):
     '''

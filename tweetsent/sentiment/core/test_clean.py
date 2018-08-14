@@ -1,5 +1,5 @@
 '''
-    Unit tests for twitter.py
+    Unit tests for clean.py
 '''
 
 from .clean   import *
