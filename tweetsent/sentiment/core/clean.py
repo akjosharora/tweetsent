@@ -13,7 +13,6 @@ except :
     pass
 
 STOP_WORDS     = nltk.corpus.stopwords.words('english')
-STOP_WORDS.remove('not')
 
 #Contains regex extressions for cleaning
 CLEAN_REGEX = {
@@ -78,25 +77,10 @@ def replace_antonyms(text):
                     if lemma.antonyms():
                         antonyms.update([x.name() for x in lemma.antonyms()])
             text = text.replace(x[0], list(sorted(antonyms))[0])
-        except Exception as e:
-            print(e)
+        except:
+            #In case of no synonyms
+            pass
     return text
-
-def replace_synonyms(tokens):
-    '''
-        Replace a word it's synonym, this will be very helpful for numerical representation.
-        All possible synonyms for a given word are replaced exactly with the same synonym.
-        Args    :
-            tokens   : The tokens to process.
-        Returns :   A list with tokens replaced with their synonyms.
-    '''
-    tokens  = tokens.copy()
-
-    for i in len(tokens) :
-        synonyms    = wn.synsets(token)
-        tokens[i]   = list(sorted(set(chain.from_iterable([word.lemma_names() for word in synonyms]))))[0]
-
-    return tokens
 
 def remove_stop_words(tokens):
     '''
@@ -125,6 +109,7 @@ def clean_and_stem(text):
             text   : The text to process.
         Returns :   A list of stemmed clean tokens.
     '''
+    text    = text.lower()
     text    = replace_antonyms  (text)
     text    = clean_text        (text)
     tokens  = tokenize_text     (text)
