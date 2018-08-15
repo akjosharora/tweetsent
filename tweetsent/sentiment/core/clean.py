@@ -6,7 +6,6 @@ import  re
 import  nltk
 
 from    nltk.corpus     import wordnet  as wn
-from    itertools       import chain
 try :
     nltk.download('stopwords')
 except :
@@ -19,7 +18,7 @@ CLEAN_REGEX = {
     'url'       : 'http.?://[^\s]+[\s]?'                    ,
     'username'  : '@[^\s]+[\s]?'                            ,
     'tag'       : '#[^\s]+[\s]?'                            ,
-    'empty'     : 'Not Available'                           ,
+    'empty'     : 'unavailable'                             ,
     'number'    : '\s?\d+\.?\d*'                            ,
     'special'   : '[^\w+\s]'                                ,
     }
