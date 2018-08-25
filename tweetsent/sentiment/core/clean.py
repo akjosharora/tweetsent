@@ -7,7 +7,8 @@ import  nltk
 
 from    nltk.corpus     import wordnet  as wn
 try :
-    nltk.download('stopwords')
+    pass
+    #nltk.download('stopwords')
 except :
     pass
 
@@ -115,4 +116,4 @@ def clean_and_stem(text):
     tokens  = remove_stop_words (tokens)
     tokens  = stem_text         (tokens)
 
-    return tokens
+    return ' '.join(tokens)

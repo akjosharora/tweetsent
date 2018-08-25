@@ -2,8 +2,15 @@
     Unit tests for ml.py
 '''
 
-from .ml   import *
 import os
+
+from .ml                                import *
+from sklearn.naive_bayes                import GaussianNB, BernoulliNB
+
+DS_PATH = os.path.join(
+    'data'  ,
+    'ds.csv'
+    )
 
 def test_get_added_name     ():
     '''
@@ -21,50 +28,30 @@ def test_get_added_name     ():
 
     assert expected == results
 
-def test_get_words_count    ():
+def test_classfier_load_ds():
     '''
-        Tests ml.get_words_count.
+        Tests ml.Classifier
     '''
-    df  = pd.DataFrame(
-        {
-            'tokens' :  [
-                ['a', 'b', 'c'] ,
-                ['b', 'b', 'c'] ,
-                ['a', 'a', 'a'] ]})
+    cl1         = BernoulliNB()
+    cl2         = GaussianNB()
+    classifier = Classifier(
+        classifiers     = {
+            cl1     : {}    ,
+            cl2     : {
+                'toarray'   : True}},
+        ds_path         = DS_PATH       ,
+        clean_data      = True          ,
+        min_df          = 0             ,
+        data_size       = 99            ,
+        train_size      = 0.8           ,
+        tfidf           = True          ,
+        text_column     = 5             ,
+        category_column = 0             ,
+        encoding        = 'ISO-8859-1'  ,
+        header          = None          ,
+        index_col       = 1             )
 
-    assert      get_words_count(df, 'tokens', 0) == \
-                [['a', 4], ['b', 3], ['c', 2]]
-
-def testget_repr_df         ():
-    '''
-        Tests ml.get_repr_df
-    '''
-    df      = pd.DataFrame(
-        {
-            'tokens'    :  [
-                ['a', 'b', 'c'] ,
-                ['b', 'b', 'c'] ,
-                ['a', 'a', 'a'] ],
-            'Category'  : ['X', 'X', 'X']})
-    occs    = get_words_count(df, 'tokens', 0)
-    df_repr = get_repr_df(df, occs)
-
-    assert  list(df_repr['a'].values) == [1, 0, 3] and \
-            list(df_repr['b'].values) == [1, 2, 0] and \
-            list(df_repr['c'].values) == [1, 1, 0]
-
-def test_get_numerical_repr ():
-    '''
-        Tests ml.get_numerical_repr
-    '''
-    data_set_path   = os.path.join(
-        os.path.dirname(__file__)   ,
-        'test_data'                 ,
-        'ds.csv'                    )
-
-    assert len(get_numerical_repr(data_set_path, '', 0, True)) == 2
-
-    df_repr = get_numerical_repr(data_set_path, 'Tweets', 0, False)
-    
-    assert  list(df_repr['product'].values) == [1, 1] and \
-            list(df_repr['good'].values)    == [1, 0]
+    assert  len(classifier.df)           == 99      and \
+            len(classifier.df_remaining) >  1000    and \
+            classifier.vectorized        != None    and \
+            classifier.classifiers[cl1]['accuracy'] > 0.5

@@ -52,4 +52,4 @@ def test_clean_and_stem     ():
     tweet   = 'not good, i don\'t like this product and i won\'t buy it, i will just keep using my old one #badproduct'
 
     assert  clean_and_stem(tweet) == \
-            ['bad', 'dislik', 'product', 'sell', 'keep', 'use', 'old', 'one']
+            ' '.join(['bad', 'dislik', 'product', 'sell', 'keep', 'use', 'old', 'one'])
