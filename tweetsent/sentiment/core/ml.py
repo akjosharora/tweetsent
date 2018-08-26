@@ -7,11 +7,13 @@ import pandas as pd
 import random
 import json
 import os
+import pickle
 
 from pprint                             import pprint
-from clean                              import clean_and_stem
+from .clean                             import clean_and_stem
 from itertools                          import chain
 
+from sklearn.externals                  import joblib
 from sklearn.feature_extraction.text    import TfidfVectorizer, \
                                                CountVectorizer
 from sklearn.model_selection            import train_test_split
@@ -44,6 +46,14 @@ def get_added_name(path, added_name= '_save'):
         dirname                         ,
         file_name+ added_name+ extension)
 
+def create_from_params(**kwargs):
+    
+def split(x):
+    '''
+        A hack to get pickle working!
+    '''
+    return x.split()
+
 def predict(model, text):
     '''
         Predicts the emotion of the tweet using the trained model.
@@ -52,11 +62,37 @@ def predict(model, text):
             tweet       : text to classify.
             words_occ   : words occurences
     '''
-    clean       = clean_and_stem(text)
-    vectorizer  = CountVectorizer(analyzer    = 'word', lowercase   = True)
-    mask        = vectorizer.fit_transform([clean])
+    if model['Cleaned']:
+        text        = clean_and_stem(text)
 
-    return model.predict([mask])[0]
+    vectorized      =  model['model'].vectorizer.transform([text])
+    return model['model'].predict(vectorized)
+
+def load_models(root= 'models'):
+    '''
+        Loads saved models.
+        Args    :
+            root    : The directory where the models are saved.
+    '''
+
+    dir = os.path.dirname(__file__)
+    path= os.path.join(dir, root)
+    models  = []
+    for x in os.listdir(path):
+        if x.split('.')[-1] == 'pkl':
+            name    = x[:-4]
+            model   = {
+                    'Classifier'    : name.split('_')[0]        ,
+                    'Data set'      : name.split('_')[1]        ,
+                    'Cleaned'       : eval(name.split('_')[2])  ,
+                    'Min dif'       : int(name.split('_')[3])   ,
+                    'Data size'     : int(name.split('_')[4])   ,
+                    'Train size'    : float(name.split('_')[5]) ,
+                    'TFIDF'         : eval(name.split('_')[6])  ,
+                    'Accuracy'      : float(name.split('_')[7]) ,
+                    'model'         : joblib.load(os.path.join(path, x))}
+            models.append(model)
+    return models
 
 class Classifier():
     '''
@@ -107,20 +143,21 @@ class Classifier():
         self.df, self.df_remaining  = self.load_ds()
         self.labels                 = self.df[str(self.category_column) if clean_data else self.category_column].values
         print('>>> Vectorizing ...')
-        self.vectorized             = self.vectorize()
+        self.vectorizer             = self.vectorize()
+        values                      = self.df['clean' if self.clean_data else self.text_column ].values
+        self.vectorized             = self.vectorizer.fit_transform(values)
 
         for x in self.classifiers:
             xd  = classifiers[x]
             print('Training: {}'.format(x.__class__.__name__))
-            train_data  = self.split(xd.get('toarray'))
-            model       = x.fit(train_data[0], train_data[2])
-            predictions = model.predict(train_data[1])
-            accuracy    = accuracy_score(train_data[3], predictions)
+            train_data          = self.split(xd.get('toarray'))
+            model               = x.fit(train_data[0], train_data[2])
+            predictions         = model.predict(train_data[1])
+            accuracy            = accuracy_score(train_data[3], predictions)
+            model.vectorizer    = self.vectorizer
 
             self.classifiers[x]['accuracy' ]= accuracy
             self.classifiers[x]['model']    = model
-
-
 
     def load_ds(self):
         '''
@@ -157,21 +194,20 @@ class Classifier():
         '''
             Vectorizes the data set.
         '''
-        values  = self.df['clean' if self.clean_data else self.text_column ].values
         if self.tfidf :
             return TfidfVectorizer(
                 analyzer    = 'word'                                                ,
                 stop_words  = 'english'                                             ,
                 lowercase   = True                                                  ,
-                tokenizer   = None if not self.clean_data else lambda x: x.split()  ,
-                min_df      = self.min_df                                           ).fit_transform(values)
+                tokenizer   = None if not self.clean_data else split                ,
+                min_df      = self.min_df                                           )
         else :
             return CountVectorizer(
                 analyzer    = 'word'                                                ,
                 stop_words  = 'english'                                             ,
                 lowercase   = True                                                  ,
-                tokenizer   = None if not self.clean_data else lambda x: x.split()  ,
-                min_df      = self.min_df                                           ).fit_transform(values)
+                tokenizer   = None if not self.clean_data else split                ,
+                min_df      = self.min_df                                           )
 
     def split(self, toarray):
         '''
@@ -185,14 +221,23 @@ class Classifier():
             train_size   = self.train_size                              ,
             random_state = random.randint(0,1000)                       )
 
-    def save(self):
+    def save(self, root= 'models'):
         '''
             Save the trained classifiers.
         '''
-        saved   = {}
+        name_fomat  = ('{}_'*8)[:-1]+ '.pkl'
+        dir = os.path.dirname(__file__)
+        path= os.path.join(dir, root)
 
         for x in self.classifiers:
-            saved['classifier']     = x.__class__.name
-            saved['clean_data']     = x.__class__.name
+            name = name_fomat.format(
+                x.__class__.__name__            ,
+                os.path.basename(self.ds_path)  ,
+                self.clean_data                 ,
+                self.min_df                     ,
+                self.data_size                  ,
+                self.train_size                 ,
+                self.tfidf                      ,
+                self.classifiers[x]['accuracy'] )
 
-        return
+            joblib.dump(self.classifiers[x]['model'], os.path.join(path, name))

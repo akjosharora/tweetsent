@@ -8,8 +8,8 @@ from .ml                                import *
 from sklearn.naive_bayes                import GaussianNB, BernoulliNB
 
 DS_PATH = os.path.join(
-    'data'  ,
-    'ds.csv'
+    'test_data'  ,
+    'dstest.csv'
     )
 
 def test_get_added_name     ():
@@ -46,12 +46,19 @@ def test_classfier_load_ds():
         train_size      = 0.8           ,
         tfidf           = True          ,
         text_column     = 5             ,
-        category_column = 0             ,
+        category_column = 1             ,
         encoding        = 'ISO-8859-1'  ,
         header          = None          ,
         index_col       = 1             )
 
+
     assert  len(classifier.df)           == 99      and \
-            len(classifier.df_remaining) >  1000    and \
-            classifier.vectorized        != None    and \
-            classifier.classifiers[cl1]['accuracy'] > 0.5
+            len(classifier.df_remaining) >  99      and \
+            classifier.vectorized        != None
+
+
+    classifier.save('test_models')
+    models  = load_models('test_models')
+    print(predict(models[0],'bad bad bad'))
+    assert  len(models) == 2 and \
+            predict(models[0],'bad bad bad') == 0
