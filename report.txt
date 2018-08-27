@@ -1,5 +1,6 @@
 Cleaning the text
   To improve the accuracy of predictions, we must have a good numerical representation of the text or tweets in our case, several
+  Cleaning the text can add from 1 to 2% to overall accuracy for any classifier.
   step are taken in order to achieve that:
     - Converting the text to lower case.
     - Replace words preceded by not, no or words ending with "n't: (don't, mustn't, won't ...) with their opposite using an endligh dictionary.
@@ -17,3 +18,4 @@ Cleaning the text
       All stop words must be removed with the exception of no and not, these two were actually removed in step 2.
     - Stemming:
       All collected tokens or words are reduced to their stem, stemming does not always return a correct word, but it always reduced derived words to a single origin.
+    -
