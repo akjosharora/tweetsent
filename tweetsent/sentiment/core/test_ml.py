@@ -8,6 +8,7 @@ from .ml                                import *
 from sklearn.naive_bayes                import GaussianNB, BernoulliNB
 
 DS_PATH = os.path.join(
+    os.path.dirname(__file__),
     'test_data'  ,
     'dstest.csv'
     )
@@ -59,6 +60,5 @@ def test_classfier_load_ds():
 
     classifier.save('test_models')
     models  = load_models('test_models')
-    print(predict(models[0],'bad bad bad'))
-    assert  len(models) == 2 and \
-            predict(models[0],'bad bad bad') == 0
+    assert  len(models) > 0 and \
+            predict(models[0][1],'bad bad bad') == 0

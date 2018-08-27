@@ -1,16 +1,19 @@
-from django.shortcuts import render, redirect
-from .core.ml import *
-
+from django.shortcuts   import render, redirect
+from .core.ml           import *
+from .core.twitter      import *
 
 # Create your views here.
 
 
 def classifiers(request):
-    models = load_models('test_models')
+    models = load_models('models')
     for x in models:
-        del x['model']
+        del x[1]['model']
     return render(request, 'classifiers.html',{'models': models})
 
+def delete_classifier(request):
+    delete(request.GET.get('id'))
+    return redirect('/classifiers')
 
 def add_classifier(request):
     params = [
@@ -26,6 +29,8 @@ def add_classifier(request):
         'encoding'          ,
         'header'            ,
         'index_col'         ,
+        'toarray'           ,
+        'max_features'
         ]
     create_from_params(
         **{x: request.GET.get(x) for x in params}
@@ -33,4 +38,8 @@ def add_classifier(request):
     return redirect('/classifiers')
 
 def tweets(request):
-    render(request, 'tweets.html',{})
+    tag     = request.GET.get('tag', 'bitcoin')
+    tweets  = get_last_tweets(tag, auth())
+    result  = predict_all(tweets)
+    print(len(result))
+    return render(request, 'tweets.html',{'result': result})

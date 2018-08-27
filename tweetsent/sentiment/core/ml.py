@@ -19,6 +19,9 @@ from sklearn.feature_extraction.text    import TfidfVectorizer, \
 from sklearn.model_selection            import train_test_split
 from sklearn.neural_network             import MLPClassifier
 from sklearn.neighbors                  import KNeighborsClassifier
+from sklearn.linear_model               import LogisticRegression, \
+                                               RidgeClassifier
+
 from sklearn.svm                        import SVC
 from sklearn.linear_model               import SGDClassifier
 from sklearn.gaussian_process           import GaussianProcessClassifier
@@ -28,7 +31,22 @@ from sklearn.naive_bayes                import GaussianNB, BernoulliNB
 from sklearn.metrics                    import accuracy_score
 
 
+def delete(id):
+    '''
+        Deletes a model with a given id.
+        Args    :
+            id  : Model id.
+    '''
+    dir     = os.path.dirname(__file__)
+    path    = os.path.join(dir, 'models')
+    files   = [x for x in os.listdir(path) if id in x]
 
+    path    = os.path.join(
+        os.path.dirname(__file__)   ,
+        'models'                    ,
+        files[0]                    )
+
+    os.remove(path)
 
 def get_added_name(path, added_name= '_save'):
     '''
@@ -47,7 +65,31 @@ def get_added_name(path, added_name= '_save'):
         file_name+ added_name+ extension)
 
 def create_from_params(**kwargs):
-    
+    '''
+        Train a model from web request params.
+    '''
+    print(kwargs)
+    classifier  = Classifier(
+        classifiers     = {
+            eval(kwargs['classifier']) : {'toarray': eval(kwargs['toarray'])}},
+        ds_path         = os.path.join(
+            os.path.dirname(__file__),
+            'data'  ,
+            kwargs['ds_path'])                          ,
+        clean_data      = eval(kwargs['clean_data'])    ,
+        min_df          = eval(kwargs['min_df'])        ,
+        data_size       = eval(kwargs['data_size'])     ,
+        train_size      = eval(kwargs['train_size'])    ,
+        tfidf           = eval(kwargs['tfidf'])         ,
+        text_column     = kwargs['text_column']         ,
+        category_column = kwargs['category_column']     ,
+        encoding        = kwargs['encoding']            ,
+        header          = eval(kwargs['header'])        ,
+        index_col       = kwargs['index_col']           ,
+        max_features    = eval(kwargs['max_features'])  )
+
+    classifier.save()
+
 def split(x):
     '''
         A hack to get pickle working!
@@ -65,7 +107,10 @@ def predict(model, text):
     if model['Cleaned']:
         text        = clean_and_stem(text)
 
-    vectorized      =  model['model'].vectorizer.transform([text])
+    vectorized      = model['model'].vectorizer.transform([text])
+    if model['model'].toarray :
+        vectorized  = vectorized.toarray()
+
     return model['model'].predict(vectorized)
 
 def load_models(root= 'models'):
@@ -81,6 +126,7 @@ def load_models(root= 'models'):
     for x in os.listdir(path):
         if x.split('.')[-1] == 'pkl':
             name    = x[:-4]
+            id      = name.split('_')[9]
             model   = {
                     'Classifier'    : name.split('_')[0]        ,
                     'Data set'      : name.split('_')[1]        ,
@@ -89,10 +135,26 @@ def load_models(root= 'models'):
                     'Data size'     : int(name.split('_')[4])   ,
                     'Train size'    : float(name.split('_')[5]) ,
                     'TFIDF'         : eval(name.split('_')[6])  ,
-                    'Accuracy'      : float(name.split('_')[7]) ,
+                    'Max features'  : eval(name.split('_')[7])  ,
+                    'Accuracy'      : float(name.split('_')[8]) ,
                     'model'         : joblib.load(os.path.join(path, x))}
-            models.append(model)
+            model['model'].full_name= ', '.join(name.split('_')[:-1])
+            models.append([id, model])
     return models
+
+def predict_all(tweets):
+    '''
+        Predict The tweet sentiment using all the trained models.
+    '''
+    result  = []
+
+    for tweet in tweets:
+        preds   = []
+        for x in load_models():
+            preds.append([x[1]['model'].full_name, predict(x[1], tweet)])
+        result.append([tweet, preds])
+
+    return result
 
 class Classifier():
     '''
@@ -124,7 +186,7 @@ class Classifier():
         encoding        ,
         header          ,
         index_col       ,
-        ):
+        max_features=None):
 
         self.classifiers            = classifiers
         self.ds_path                = ds_path
@@ -133,11 +195,13 @@ class Classifier():
         self.data_size              = data_size
         self.train_size             = train_size
         self.tfidf                  = tfidf
-        self.text_column            = text_column
-        self.category_column        = category_column
         self.encoding               = encoding
         self.header                 = header
-        self.index_col              = index_col
+        self.max_features           = max_features
+
+        self.text_column            = text_column       if header!=None else int(text_column)
+        self.category_column        = category_column   if header!=None else int(category_column)
+        self.index_col              = index_col         if header!=None else int(index_col)
 
         print('>>> Loading: {} ...'.format(self.ds_path))
         self.df, self.df_remaining  = self.load_ds()
@@ -152,11 +216,13 @@ class Classifier():
             print('Training: {}'.format(x.__class__.__name__))
             train_data          = self.split(xd.get('toarray'))
             model               = x.fit(train_data[0], train_data[2])
+            model.toarray       = xd.get('toarray')
             predictions         = model.predict(train_data[1])
             accuracy            = accuracy_score(train_data[3], predictions)
             model.vectorizer    = self.vectorizer
 
             self.classifiers[x]['accuracy' ]= accuracy
+            print(accuracy)
             self.classifiers[x]['model']    = model
 
     def load_ds(self):
@@ -200,14 +266,16 @@ class Classifier():
                 stop_words  = 'english'                                             ,
                 lowercase   = True                                                  ,
                 tokenizer   = None if not self.clean_data else split                ,
-                min_df      = self.min_df                                           )
+                min_df      = self.min_df                                           ,
+                max_features= self.max_features)
         else :
             return CountVectorizer(
                 analyzer    = 'word'                                                ,
                 stop_words  = 'english'                                             ,
                 lowercase   = True                                                  ,
                 tokenizer   = None if not self.clean_data else split                ,
-                min_df      = self.min_df                                           )
+                min_df      = self.min_df                                           ,
+                max_features= self.max_features)
 
     def split(self, toarray):
         '''
@@ -225,7 +293,7 @@ class Classifier():
         '''
             Save the trained classifiers.
         '''
-        name_fomat  = ('{}_'*8)[:-1]+ '.pkl'
+        name_fomat  = ('{}_'*10)[:-1]+ '.pkl'
         dir = os.path.dirname(__file__)
         path= os.path.join(dir, root)
 
@@ -238,6 +306,8 @@ class Classifier():
                 self.data_size                  ,
                 self.train_size                 ,
                 self.tfidf                      ,
-                self.classifiers[x]['accuracy'] )
+                self.max_features               ,
+                self.classifiers[x]['accuracy'] ,
+                random.getrandbits(128)         )
 
             joblib.dump(self.classifiers[x]['model'], os.path.join(path, name))
