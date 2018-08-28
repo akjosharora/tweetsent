@@ -3,7 +3,7 @@ Cleaning the text
   Cleaning the text can add from 1 to 2% to overall accuracy for any classifier.
   step are taken in order to achieve that:
     - Converting the text to lower case.
-    - Replace words preceded by not, no or words ending with "n't: (don't, mustn't, won't ...) with their opposite using an endligh dictionary.
+    - Replace words preceded by not, no or words ending with "n't: (don't, mustn't, won't ...) with their opposite using an English dictionary.
     - Removing unwanted text:
       The following will be removed using regular expressions:
         - User names.
@@ -18,4 +18,22 @@ Cleaning the text
       All stop words must be removed with the exception of no and not, these two were actually removed in step 2.
     - Stemming:
       All collected tokens or words are reduced to their stem, stemming does not always return a correct word, but it always reduced derived words to a single origin.
-    -
+
+    To increase performance, a dataset is cleaned and stemmed only once then stored on disk, the user can always choose to use the cleaned set or the original one.
+Turning text into numerical values:
+  In order to turn the stemmed text or the original raw text into numerical values, we must build our vocabulary then
+  calculate each vocabulary feature occurrences, scikit made it easy buy providing us with multiple vectorizers, the user has
+  the option to use a simple count vectorizer or a TFIDF vectorizer(https://www.quora.com/How-does-TfidfVectorizer-work-in-laymans-terms#).
+
+  Vectorization may need a large amount of RAM, two factors can help reduce the memory footprint but sadly the accuracy of classifications,
+  min_df and max_features represent the minimum number of occurrences needed for a given word to be considered in the vocabulary and the size of the vocabulary.
+  The user has the option to change both parameters when training models.
+
+Training classifiers:
+  The user can select from a wide range of classifiers, some classifiers are not good for scaling and maximum of 2k is recommended for training, linear classifiers can handle
+  large data and that results in good overall accuracy.
+  After the model is trained and tested, it is serialized and saved to disk.
+
+Live tweet classification:
+  All trained models are loaded from disk, tweets for a given topic are extracted from twitter and classified using each of the classifiers, user can then analyse
+  and improve the accuracy depending on the trained models results. 

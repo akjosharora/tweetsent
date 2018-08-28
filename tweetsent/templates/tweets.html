@@ -3,7 +3,7 @@
 {% block content %}
 <br>
 <br>
-<form class="form-inline my-2 my-lg-0" target="tweets">
+<form class="form-inline my-2 my-lg-0" target="/tweets">
       <input class="form-control mr-sm-2" type="text" placeholder="Search" name="tag" id="tag">
       <button class="btn btn-secondary my-2 my-sm-0" type="submit">Search</button>
     </form>
@@ -40,7 +40,7 @@
 <table class="table table-hover">
   <thead>
     <th>
-      Model|Tweet
+
     </th>
     {% for i in range(0, result|length) %}
     <th>
@@ -64,6 +64,39 @@
   </tbody>
 
 </table>
+
+<h1>Graphs</h1>
+<canvas id="myChart" width="400" height="400"></canvas>
+<script>
+var ctx = document.getElementById("myChart").getContext('2d');
+var myChart = new Chart(ctx, {
+    type: 'bar',
+    data: {
+        labels: {{labels}},
+        datasets: [
+            {% for i in range(0,data|length) %}
+            {
+            label: 'CL{{i}}',
+            data: {{data[i]}},
+            borderWidth: 1
+        }
+        {% if i < result[0][1]|length -1 %}
+        {{','}}
+        {% endif %}
+        {% endfor %}
+      ]
+    },
+    options: {
+        scales: {
+            yAxes: [{
+                ticks: {
+                    beginAtZero:true
+                }
+            }]
+        }
+    }
+});
+</script>
 {% endif %}
 {% endif %}
 {% endblock content %}

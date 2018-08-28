@@ -2,6 +2,7 @@ from django.shortcuts   import render, redirect
 from .core.ml           import *
 from .core.twitter      import *
 
+import json
 # Create your views here.
 
 
@@ -42,4 +43,9 @@ def tweets(request):
     tweets  = get_last_tweets(tag, auth())
     result  = predict_all(tweets)
     print(len(result))
-    return render(request, 'tweets.html',{'result': result})
+    return render(request, 'tweets.html',
+        {
+            'result': result                                            ,
+            'labels': json.dumps([i for i in range(1,len(result)+1)])   ,
+            'data'  : [json.dumps([int(result[j][1][i][1][0])+1 for j in range(len(result))]) for i in range(len(result[0][1]))]
+        })
