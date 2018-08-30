@@ -14,20 +14,17 @@ from .clean                             import clean_and_stem
 from itertools                          import chain
 
 from sklearn.externals                  import joblib
-from sklearn.feature_extraction.text    import TfidfVectorizer, \
-                                               CountVectorizer
+from sklearn.feature_extraction.text    import TfidfVectorizer, CountVectorizer
 from sklearn.model_selection            import train_test_split
 from sklearn.neural_network             import MLPClassifier
-from sklearn.neighbors                  import KNeighborsClassifier
-from sklearn.linear_model               import LogisticRegression, \
-                                               RidgeClassifier
-
-from sklearn.svm                        import SVC
+from sklearn.neighbors                  import KNeighborsClassifier, NearestCentroid
+from sklearn.linear_model               import LogisticRegression, RidgeClassifier, PassiveAggressiveClassifier, Perceptron
+from sklearn.svm                        import SVC, LinearSVC
 from sklearn.linear_model               import SGDClassifier
 from sklearn.gaussian_process           import GaussianProcessClassifier
 from sklearn.tree                       import DecisionTreeClassifier
 from sklearn.ensemble                   import RandomForestClassifier, AdaBoostClassifier
-from sklearn.naive_bayes                import GaussianNB, BernoulliNB
+from sklearn.naive_bayes                import GaussianNB, BernoulliNB, MultinomialNB
 from sklearn.metrics                    import accuracy_score
 
 
@@ -148,13 +145,41 @@ def predict_all(tweets):
     '''
     result  = []
 
+    all_reds    = [0, 4]
     for tweet in tweets:
         preds   = []
         for x in load_models():
-            preds.append([x[1]['model'].full_name, predict(x[1], tweet)])
-        result.append([tweet, preds])
+            preds.append([x[1]['model'].full_name, predict(x[1], tweet),x[1]['Accuracy'] -0.50 if x[1]['Accuracy'] > 0.50 else 0])
 
-    return result
+        precs       = {}
+        for pred in all_reds :
+            arr         = [pred_[2] for pred_ in preds if pred_[1][0] == pred]
+            precs[pred] = sum(arr) if len (arr) else 0
+
+        result.append([
+            tweet,
+            preds,
+            {pred: precs[pred]/sum(precs.values())*100 if sum(precs.values()) else 0 for pred in precs},
+            ])
+
+    sents   = []
+    for tweet in result:
+        if tweet[2][0]> tweet[2][4] :
+            sents.append('Negative')
+        elif tweet[2][0]< tweet[2][4] :
+            sents.append('Positive')
+
+        else :
+            sents.append('Neutral')
+
+
+
+    pprint(result)
+    return result,[
+        sents.count('Negative')/ len(sents),
+        sents.count('Positive')/ len(sents),
+        sents.count('Neutral')/ len(sents),
+        ]
 
 class Classifier():
     '''

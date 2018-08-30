@@ -36,4 +36,21 @@ Training classifiers:
 
 Live tweet classification:
   All trained models are loaded from disk, tweets for a given topic are extracted from twitter and classified using each of the classifiers, user can then analyse
-  and improve the accuracy depending on the trained models results. 
+  and improve the accuracy depending on the trained models results.
+
+Design patterns and methodology :
+  TDD:
+    The purpose of TDD is to enforce developers to write testable code by writing unit tests prior to the implementation and later check if the implementation
+    passes the tests, We followed this pattern and wrote unit tests for the cleaning, machine learning and twitter modules, we used pytest to write our unit tests
+    due to its simplicity since it only uses simple python assert syntax to test different  cases.
+
+  Single purpose:
+    Keeping The functionality of classes and methods limited to a single purpose helps both isolating problems and scaling, it also makes the code more readable.
+    In our implementation we tried to keep our code clean and our classes and methods limited to single purpose so it can better tested and altered in the future.
+
+  PEP8:
+    For better code readability, we followed PEP8 guidelines, we may have missed a few times, but in general our code was written in compliance with the PEP8 guidelines.
+
+Web interface:
+  We used django as a backend framework for our project, django is the number one web development framework for python and is used to host many large websites such as Instagram.
+  Using django will allow for scaling in the future, and hosting a django website can be very easy using some robust services such as heroku.
